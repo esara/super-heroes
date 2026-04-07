@@ -340,6 +340,10 @@ jobs:
     needs:
       - check-commit-count
       - create-app-multiarch-manifests
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
     uses: quarkusio/quarkus-super-heroes/.github/workflows/create-deploy-resources.yml@main
     secrets: inherit
     with:

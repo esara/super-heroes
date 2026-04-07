@@ -104,6 +104,4 @@ jobs:
         if: steps.create-pr.outputs.pr_number
         env:
           GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
-        run: |
-          gh pr review --approve ${{ steps.create-pr.outputs.pr_number }}
-          gh pr merge --squash --delete-branch --admin ${{ steps.create-pr.outputs.pr_number }}
+        run: gh pr merge --squash --delete-branch --admin ${{ steps.create-pr.outputs.pr_number }}

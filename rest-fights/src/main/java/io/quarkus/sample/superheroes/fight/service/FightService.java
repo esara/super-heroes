@@ -19,6 +19,8 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.quarkus.logging.Log;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 
 import io.quarkus.sample.superheroes.fight.Fight;
 import io.quarkus.sample.superheroes.fight.FightImage;
@@ -85,6 +87,14 @@ public class FightService {
     Log.debug("Getting all fights");
 		return Fight.listAll();
 	}
+
+  @WithSpan("FightService.findFights")
+  public Uni<List<Fight>> findFights(@SpanAttribute("arg.page") int page, @SpanAttribute("arg.size") int size) {
+    Log.debugf("Getting fights page=%d size=%d", page, size);
+    return Fight.findAll(Sort.by("fightDate").descending())
+      .page(Page.of(page, size))
+      .list();
+  }
 
   @WithSpan("FightService.findFightById")
 	public Uni<Fight> findFightById(@SpanAttribute("arg.id") String id) {

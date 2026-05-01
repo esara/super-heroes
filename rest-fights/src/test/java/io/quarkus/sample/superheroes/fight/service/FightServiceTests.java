@@ -1,6 +1,7 @@
 package io.quarkus.sample.superheroes.fight.service;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.time.Duration;
@@ -17,6 +18,9 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -132,6 +136,53 @@ class FightServiceTests extends FightServiceTestsBase {
       .isEqualTo(createFightHeroWon());
 
 		PanacheMock.verify(Fight.class).listAll();
+		PanacheMock.verifyNoMoreInteractions(Fight.class);
+	}
+
+	@Test
+	void findFights_returnsPagedFight() {
+		PanacheMock.mock(Fight.class);
+		@SuppressWarnings({"unchecked", "rawtypes"})
+		ReactivePanacheQuery query = mock(ReactivePanacheQuery.class);
+		when(query.page(any(Page.class))).thenReturn(query);
+		when(query.list()).thenReturn(Uni.createFrom().item(List.of(createFightHeroWon())));
+		when(Fight.findAll(any(Sort.class))).thenReturn(query);
+
+		var fights = this.fightService.findFights(0, 20)
+			.subscribe().withSubscriber(UniAssertSubscriber.create())
+			.assertSubscribed()
+			.awaitItem(Duration.ofSeconds(5))
+			.getItem();
+
+		assertThat(fights)
+			.singleElement()
+			.usingRecursiveComparison()
+			.isEqualTo(createFightHeroWon());
+
+		verify(query).page(any(Page.class));
+		PanacheMock.verify(Fight.class).findAll(any(Sort.class));
+		PanacheMock.verifyNoMoreInteractions(Fight.class);
+	}
+
+	@Test
+	void findFights_beyondLastPageReturnsEmpty() {
+		PanacheMock.mock(Fight.class);
+		@SuppressWarnings({"unchecked", "rawtypes"})
+		ReactivePanacheQuery query = mock(ReactivePanacheQuery.class);
+		when(query.page(any(Page.class))).thenReturn(query);
+		when(query.list()).thenReturn(Uni.createFrom().item(List.of()));
+		when(Fight.findAll(any(Sort.class))).thenReturn(query);
+
+		var fights = this.fightService.findFights(10, 100)
+			.subscribe().withSubscriber(UniAssertSubscriber.create())
+			.assertSubscribed()
+			.awaitItem(Duration.ofSeconds(5))
+			.getItem();
+
+		assertThat(fights).isEmpty();
+
+		verify(query).page(any(Page.class));
+		PanacheMock.verify(Fight.class).findAll(any(Sort.class));
 		PanacheMock.verifyNoMoreInteractions(Fight.class);
 	}
 

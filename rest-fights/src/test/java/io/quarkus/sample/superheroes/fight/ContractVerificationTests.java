@@ -1,5 +1,7 @@
 package io.quarkus.sample.superheroes.fight;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -11,6 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -57,6 +62,12 @@ public class ContractVerificationTests {
 
       when(Fight.listAll())
         .thenReturn(Uni.createFrom().item(List.of()));
+
+      @SuppressWarnings({"unchecked", "rawtypes"})
+      ReactivePanacheQuery pagedQuery = mock(ReactivePanacheQuery.class);
+      when(pagedQuery.page(any(Page.class))).thenReturn(pagedQuery);
+      when(pagedQuery.list()).thenReturn(Uni.createFrom().item(List.of()));
+      when(Fight.findAll(any(Sort.class))).thenReturn(pagedQuery);
     }
   }
 

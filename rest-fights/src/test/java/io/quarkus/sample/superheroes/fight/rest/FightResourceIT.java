@@ -1364,7 +1364,7 @@ class FightResourceIT {
       .getFirstRecord()
       .value();
 
-		assertThat(fight)
+    assertThat(fight)
 			.isNotNull()
 			.extracting(
         io.quarkus.sample.superheroes.fight.schema.Fight::getWinnerName,
@@ -1386,6 +1386,53 @@ class FightResourceIT {
 				DEFAULT_HERO.picture(),
 				HEROES_TEAM_NAME
 			);
+	}
+
+	@Test
+	@Order(DEFAULT_ORDER)
+	void getFights_paginationBeyondAvailable_returnsEmptyListAndOk() {
+		given()
+			.queryParam("page", 10)
+			.queryParam("size", 100)
+			.when().get("/api/fights")
+			.then()
+				.statusCode(OK.getStatusCode())
+				.contentType(JSON)
+				.body("size()", is(0));
+	}
+
+	@Test
+	@Order(DEFAULT_ORDER)
+	void getFights_firstPagedItemBelongsToFullListing() {
+		var allFights = get("/api/fights")
+			.then()
+				.statusCode(OK.getStatusCode())
+				.extract().body()
+				.jsonPath().getList(".", Fight.class);
+
+		assertThat(allFights).isNotEmpty();
+
+		var firstPage = given()
+			.queryParam("page", 0)
+			.queryParam("size", 1)
+			.when().get("/api/fights")
+			.then()
+				.statusCode(OK.getStatusCode())
+				.extract().body()
+				.jsonPath().getList(".", Fight.class);
+
+		assertThat(firstPage).hasSize(1);
+		assertThat(allFights).extracting(f -> f.id).contains(firstPage.get(0).id);
+	}
+
+	@Test
+	@Order(DEFAULT_ORDER)
+	void getFights_invalidPageQueryParameter_returnsBadRequest() {
+		given()
+			.queryParam("page", "not-an-integer")
+			.when().get("/api/fights")
+			.then()
+				.statusCode(BAD_REQUEST.getStatusCode());
 	}
 
 	private List<Fight> getAndVerifyAllFights() {
